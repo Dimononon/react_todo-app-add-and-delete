@@ -6,10 +6,11 @@ import { TodoList } from './components/TodoList/TodoList';
 import { TodoFooter } from './components/TodoFooter/TodoFooter';
 import { NewTodo } from './components/NewTodo/NewTodo';
 import { FilterOption } from './types/FilterOption';
+import { ErrorMessage } from './types/ErrorMessage';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState(ErrorMessage.Default);
   const [hideError, setHideError] = useState(true);
   const [filterOption, setFilterOption] = useState(FilterOption.All);
 
@@ -22,19 +23,18 @@ export const App: React.FC = () => {
   const [focusTrigger, setFocusTrigger] = useState(0);
 
   const filteredTodos = () => {
-    if (filterOption === FilterOption.Active) {
-      return todos.filter(todo => !todo.completed);
+    switch (filterOption) {
+      case FilterOption.Active:
+        return todos.filter(todo => !todo.completed);
+      case FilterOption.Completed:
+        return todos.filter(todo => todo.completed);
+      default:
+        return todos;
     }
-
-    if (filterOption === FilterOption.Completed) {
-      return todos.filter(todo => todo.completed);
-    }
-
-    return todos;
   };
 
-  const showError = (message: string) => {
-    setErrorMessage(message);
+  const showError = (error: ErrorMessage) => {
+    setErrorMessage(error);
     setHideError(false);
     setTimeout(() => setHideError(true), 3000);
   };
@@ -44,7 +44,7 @@ export const App: React.FC = () => {
     getTodos()
       .then(setTodos)
       .catch(() => {
-        showError('Unable to load todos');
+        showError(ErrorMessage.Load);
       });
   }, []);
 
@@ -52,7 +52,7 @@ export const App: React.FC = () => {
     const trimmedTitle = title.trim();
 
     if (!trimmedTitle.length) {
-      showError('Title should not be empty');
+      showError(ErrorMessage.TitleEmpty);
 
       return Promise.reject();
     }
@@ -65,7 +65,7 @@ export const App: React.FC = () => {
         setTempTodo(null);
       })
       .catch(() => {
-        showError('Unable to add a todo');
+        showError(ErrorMessage.Add);
         setTempTodo(null);
         throw new Error();
       });
@@ -80,7 +80,7 @@ export const App: React.FC = () => {
         setFocusTrigger(prev => prev + 1);
       })
       .catch(() => {
-        showError('Unable to delete a todo');
+        showError(ErrorMessage.Delete);
       })
       .finally(() => {
         setProcessingIds(prev => prev.filter(currentId => currentId !== id));
@@ -110,7 +110,7 @@ export const App: React.FC = () => {
 
     Promise.all(promises).then(results => {
       if (results.includes(false)) {
-        showError('Unable to delete a todo');
+        showError(ErrorMessage.Delete);
       }
 
       setFocusTrigger(prev => prev + 1);
